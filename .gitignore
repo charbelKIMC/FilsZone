@@ -10,6 +10,7 @@ storage/cache/
 # Réglages d'éditeur, propres à chaque développeur
 .vscode/
 .idea/
+.claude/
 
 # Fichiers parasites de Windows, macOS et Word
 Thumbs.db
