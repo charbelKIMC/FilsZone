@@ -14,17 +14,17 @@
 
 /* ---------- Structure ---------- */
 .shell { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
-.sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding: 20px 14px; background: var(--surface); border-right: 1px solid var(--bd); }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; padding: 0 8px; }
+.sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding: 20px 14px; background:  #0a5f5b ; border-right: 1px solid var(--bd); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700;color: var(--surface-2); font-size: 16px; padding: 0 8px; }
 .brand-mark { width: 36px; height: 36px; border-radius: 10px; background: var(--pri); color: var(--on-pri); display: grid; place-items: center; flex: none; }
 .nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-.nav a { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--mut); text-decoration: none; font-weight: 600; transition: background .15s, color .15s; }
+.nav a { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--surface-2); text-decoration: none; font-weight: 600; transition: background .15s, color .15s; }
 .nav a:hover { background: var(--surface-2); color: var(--tx); }
 .nav a.active { background: var(--pri-soft); color: var(--pri); }
 .nav-badge { margin-left: auto; background: var(--pri); color: var(--on-pri); font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; min-width: 22px; text-align: center; }
-.sidebar-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 8px 0; border-top: 1px solid var(--bd); color: var(--mut); font-size: 14px; }
-.sidebar-foot .who { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.sidebar-foot b { color: var(--tx); overflow: hidden; text-overflow: ellipsis; }
+.sidebar-foot { display: flex; align-items: center; justify-content: space-between;  gap: 8px; padding: 14px 8px 0; border-top: 1px solid var(--bd); color: var(--mut); font-size: 14px; }
+.sidebar-foot .who { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--surface-2);}
+.sidebar-foot b { color: var(--tx); overflow: hidden; text-overflow: ellipsis; color: var(--surface-2); }
 
 .content { padding: 30px 32px 56px; width: 100%; max-width: 1240px; margin: 0 auto; min-width: 0; }
 .page { display: flex; flex-direction: column; gap: 20px; }
