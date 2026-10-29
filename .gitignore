@@ -1,0 +1,18 @@
+# Secrets et réglages propres à chaque machine (modèle versionné : .env.example)
+.env
+
+# Fichiers générés par l'application (recréés automatiquement)
+storage/cache/
+
+# Journaux
+*.log
+
+# Réglages d'éditeur, propres à chaque développeur
+.vscode/
+.idea/
+
+# Fichiers parasites de Windows, macOS et Word
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*

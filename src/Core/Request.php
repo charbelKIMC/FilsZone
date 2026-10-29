@@ -40,6 +40,8 @@
             return $this->query[$key] ?? $default;
         }
 
+        // Adresse vue par le serveur. ⚠️ Derrière un proxy inverse ou un NAT, ce sera la même adresse pour
+        // TOUS les clients (l'anti force brute bloquerait tout le monde) : voir LISMOI.md avant ce passage
         public function ip(): string {
             return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         }

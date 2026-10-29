@@ -47,6 +47,14 @@
             return $this->hydrate($row);
         }
 
+        // Verrouille la ligne du ticket jusqu'à la fin de la transaction en cours :
+        // une autre requête qui veut verrouiller le même ticket attend son tour
+        public function lock(int $id): void
+        {
+            $stmt = $this->db->prepare('SELECT id_ticket FROM ticket WHERE id_ticket = :id FOR UPDATE');
+            $stmt->execute(['id' => $id]);
+        }
+
         public function identifiantExists(string $identifiant): bool
         {
             $stmt = $this->db->prepare('SELECT 1 FROM ticket WHERE identifiant = :identifiant LIMIT 1');

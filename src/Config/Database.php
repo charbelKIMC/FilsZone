@@ -3,7 +3,8 @@
     
     namespace App\Config;
     use App\Core\Env;
-    use PDO; 
+    use PDO;
+    use Throwable;
 
     class Database {
         private static ?PDO $pdo = null;
@@ -19,6 +20,21 @@
                 ]);
             }
             return self::$pdo;
+        }
+
+        // Exécute $fn dans une transaction : tout est validé, ou tout est annulé si une exception survient
+        // (tous les repositories partagent cette connexion, ils sont donc tous dans la transaction)
+        public static function transaction(callable $fn): mixed {
+            $pdo = self::connexion();
+            $pdo->beginTransaction();
+            try {
+                $result = $fn();
+                $pdo->commit();
+                return $result;
+            } catch (Throwable $e) {
+                $pdo->rollBack();
+                throw $e;
+            }
         }
     }
 ?>

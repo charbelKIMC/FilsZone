@@ -1,13 +1,16 @@
 <?php
     declare(strict_types=1);
     namespace App\Services;
+    use App\Config\Database;
     use App\Core\HttpException;
     use App\Repositories\SessionRepository;
     use App\Repositories\TicketRepository;
 
     class ClientService {
         private const USAGE_MAX_GO = 1000;
-        private const MAX_ECHECS = 10;
+        // Anti force brute : échecs autorisés sur 15 min, par appareil (IP) et par ticket visé
+        private const MAX_ECHECS_IP = 10;
+        private const MAX_ECHECS_TICKET = 5;
 
         private TicketRepository $tickets;
         private SessionRepository $sessions;
@@ -27,37 +30,60 @@
                 throw new HttpException('Adresse MAC invalide', 422);
             }
 
-            $cle = 'client:' . $ip;
-            $this->tentatives->assertNotBlocked($cle, self::MAX_ECHECS);
+            // ⚠️ Derrière un proxy ou un NAT, toutes les requêtes ont la même IP : voir LISMOI.md
+            $cleIp = 'client:' . $ip;
+            $this->tentatives->assertNotBlocked($cleIp, self::MAX_ECHECS_IP);
+
+            // Un identifiant mal formé ne peut pas exister : inutile d'interroger la base
+            // (et la clé d'anti force brute reste dans les 100 caractères de la colonne)
+            if (!preg_match('/^[A-Z0-9]{1,20}$/', $identifiant)) {
+                $this->tentatives->fail($cleIp);
+                throw new HttpException('Identifiant ou mot de passe incorrect', 401);
+            }
+            // Limite par ticket : changer d'appareil ou d'IP ne permet pas d'essayer plus de mots de passe sur un même ticket
+            $cleTicket = 'ticket:' . $identifiant;
+            $this->tentatives->assertNotBlocked($cleTicket, self::MAX_ECHECS_TICKET);
 
             $this->ticketService->refreshStatuses();
 
             $ticket = $this->tickets->findByIdentifiant($identifiant);
             if ($ticket === null || !password_verify($password, $ticket['mot_de_passe'])) {
-                $this->tentatives->fail($cle);
+                $this->tentatives->fail($cleIp);
+                $this->tentatives->fail($cleTicket);
                 throw new HttpException('Identifiant ou mot de passe incorrect', 401);
             }
-            $this->tentatives->reset($cle);
+            // Seul le compteur du ticket est remis à zéro : effacer celui de l'IP permettrait à un fraudeur
+            // possédant un ticket valide de repartir de zéro entre deux séries d'essais (il expire seul après 15 min)
+            $this->tentatives->reset($cleTicket);
 
-            $this->ticketService->assertUsable($ticket);
+            // Transaction + verrou sur le ticket : deux connexions simultanées avec le même ticket passent
+            // l'une après l'autre, la seconde voit donc la session ouverte par la première et est refusée
+            return Database::transaction(function () use ($ticket, $mac, $ip): array {
+                $this->tickets->lock($ticket['id_ticket']);
+                // Relu après le verrou : l'état a pu changer pendant l'attente
+                $ticket = $this->tickets->findById($ticket['id_ticket']);
 
-            // Un seul appareil à la fois par ticket
-            $open = $this->sessions->findOpenByTicket($ticket['id_ticket']);
-            if ($open !== null) {
-                if ($open['adresse_mac'] !== $mac) {
-                    throw new HttpException('Ce ticket est déjà utilisé sur un autre appareil', 409);
+                $this->ticketService->assertUsable($ticket);
+
+                // Un seul appareil à la fois par ticket : l'autre doit d'abord se déconnecter
+                // (ou rester inactif SESSION_INACTIVITE_MINUTES, sa session est alors fermée automatiquement)
+                $open = $this->sessions->findOpenByTicket($ticket['id_ticket']);
+                if ($open !== null) {
+                    if ($open['adresse_mac'] !== $mac) {
+                        throw new HttpException('Ce ticket est déjà utilisé sur un autre appareil', 409);
+                    }
+                    $this->sessions->close($open['id_session']);
                 }
-                $this->sessions->close($open['id_session']);
-            }
 
-            // Première connexion : démarre le décompte de la durée
-            if ($ticket['date_premiere_connexion'] === null) {
-                $this->tickets->startFirstUse($ticket['id_ticket'], $ticket['duree_validite']);
-            }
+                // Première connexion : démarre le décompte de la durée
+                if ($ticket['date_premiere_connexion'] === null) {
+                    $this->tickets->startFirstUse($ticket['id_ticket'], $ticket['duree_validite']);
+                }
 
-            $sessionId = $this->sessions->open($ticket['id_ticket'], $mac, $ip);
+                $sessionId = $this->sessions->open($ticket['id_ticket'], $mac, $ip);
 
-            return ['ticket_id' => $ticket['id_ticket'], 'session_id' => $sessionId];
+                return ['ticket_id' => $ticket['id_ticket'], 'session_id' => $sessionId];
+            });
         }
 
         public function dashboard(int $ticketId, int $sessionId): array {
