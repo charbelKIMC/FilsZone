@@ -1,0 +1,3 @@
+# Seuls public/ (l'API) et frontend/ (les pages) doivent être accessibles depuis le navigateur
+RedirectMatch 404 /\.env
+RedirectMatch 404 ^/[^/]+/(src|storage)(/|$)
