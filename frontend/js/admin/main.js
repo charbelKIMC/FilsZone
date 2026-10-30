@@ -1,7 +1,7 @@
 import { CONFIG } from '../../config.js';
 import { get, post } from '../api.js';
 import { initPage, showAlert } from '../common.js';
-import { $, $$, handleError, withBusy } from '../ui.js';
+import { $, $$, confirmDialog, handleError, withBusy } from '../ui.js';
 import * as dashboard from './dashboard.js';
 import * as forfaits from './forfaits.js';
 import * as tickets from './tickets.js';
@@ -74,9 +74,16 @@ function bindLogin() {
         }
     });
 
+    // Confirmation avant de quitter : un clic par erreur ne doit pas fermer la session
     $('#logout').addEventListener('click', async () => {
+        const ok = await confirmDialog({
+            title: 'Se déconnecter ?',
+            message: 'Vous devrez saisir à nouveau votre identifiant et votre mot de passe pour revenir à l\'administration.',
+            confirmLabel: 'Se déconnecter',
+        });
+        if (!ok) return;
         try {
-            await post('/admin/logout');
+            await withBusy($('#logout'), () => post('/admin/logout'));
         } catch (error) {
             handleError(error);
         }
